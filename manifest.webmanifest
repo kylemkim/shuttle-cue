@@ -2,7 +2,7 @@
   "id": "./index.html",
   "name": "Shuttle Cue - 배드민턴 훈련",
   "short_name": "Shuttle Cue",
-  "description": "비프음, 8방향 음성 풋워크, 1~10 숫자 그립 전환 훈련",
+  "description": "비프음, 8방향 음성 풋워크, 1~10 숫자 그립 전환, 방향과 스트로크 2단계 훈련",
   "lang": "ko-KR",
   "start_url": "./index.html",
   "scope": "./",
