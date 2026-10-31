@@ -1,0 +1,27 @@
+{
+  "id": "./index.html",
+  "name": "Shuttle Cue - 배드민턴 훈련",
+  "short_name": "Shuttle Cue",
+  "description": "비프음, 8방향 음성 풋워크, 1~10 숫자 그립 전환 훈련",
+  "lang": "ko-KR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3faff",
+  "theme_color": "#eef8ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
