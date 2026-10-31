@@ -1,8 +1,8 @@
 'use strict';
 
-/** Shuttle Cue v1.4. Standalone offline-first PWA, no server or tracking. */
-const STORAGE_KEY = 'shuttle-cue-settings-v1.4';
-const LEGACY_STORAGE_KEYS = ['shuttle-cue-settings-v1.3', 'shuttle-cue-settings-v1.2', 'shuttle-cue-settings-v1.1', 'shuttle-cue-settings-v1'];
+/** Shuttle Cue v1.5. Standalone offline-first PWA, no server or tracking. */
+const STORAGE_KEY = 'shuttle-cue-settings-v1.5';
+const LEGACY_STORAGE_KEYS = ['shuttle-cue-settings-v1.4', 'shuttle-cue-settings-v1.3', 'shuttle-cue-settings-v1.2', 'shuttle-cue-settings-v1.1', 'shuttle-cue-settings-v1'];
 const VOICE_LANGUAGES = [
   {id:'en-US',label:'English', detail:'US'},
   {id:'ko-KR',label:'한국어', detail:'KR'},
@@ -67,7 +67,7 @@ const COMBO_ALLOWED = {
   frontLeft:['bhUnder','bhPush','hairpin'],
   front:['fhUnder','bhUnder','fhPush','bhPush','hairpin'],
   frontRight:['fhUnder','fhPush','hairpin'],
-  right:['fhDrive'], left:['bhDrive'],
+  right:['fhDrive','smash'], left:['bhDrive','smash'],
   backRight:['clear','smash','drop'],
   back:['clear','smash','drop'],
   backLeft:['clear','smash','drop','bhClear']
@@ -86,17 +86,22 @@ function strokeSpeech(stroke){
   return settings.voiceLanguage==='ko-KR' ? stroke.ko :
     settings.voiceLanguage==='ja-JP' ? stroke.ja : stroke.en;
 }
+/** A single TTS utterance, not two overlapping voices. */
+function combinedComboSpeech(combo){
+  const separator=settings.voiceLanguage==='ja-JP'?'、':', ';
+  return directionSpeech(combo.direction)+separator+strokeSpeech(combo.stroke);
+}
 const MODE_INFO = {
   reaction:{name:'REACTION / A', icon:'✦', prompt:'삑 소리에 맞춰 스플릿 스텝!'},
   footwork:{name:'FOOTWORK / B', icon:'↗', prompt:'음성 방향에 따라 이동하고 중앙으로 복귀하세요'},
   grip:{name:'GRIP / C', icon:'⌁', prompt:'숫자를 듣고 해당 그립과 스트로크를 준비하세요'},
-  combination:{name:'COMBINATION / D', icon:'✧', prompt:'방향을 듣고 이동 → 스트로크를 듣고 스윙 → 복귀'}
+  combination:{name:'COMBINATION / D', icon:'✧', prompt:'코너별 랜덤 방향 + 스트로크 · 음성 방식 선택 가능'}
 };
 const DEFAULTS = () => ({
   mode:'reaction', duration:60,
   intervals:{reaction:{min:1,max:3},footwork:{min:1,max:3},grip:{min:1,max:3},combination:{min:1,max:3}},
   recovery:2, voiceLanguage:'en-US', voiceRate:1.2, beepVolume:0.65,
-  combination:{delay:0.7,recovery:2,avoidRepeat:true,strokes:defaultComboStrokes()},
+  combination:{speechMode:'staged',delay:0.7,recovery:2,avoidRepeat:true,strokes:defaultComboStrokes()},
   directions:DIRECTIONS.map(d=>d.id), grips:GRIPS.map(g=>g.id)
 });
 const $ = (id) => document.getElementById(id);
@@ -138,14 +143,22 @@ function restoreSettings(){
     }
     const combo=saved.combination;
     if(combo && typeof combo==='object'){
+      if(['staged','combined'].includes(combo.speechMode)) s.combination.speechMode=combo.speechMode;
       if(Number.isFinite(Number(combo.delay))) s.combination.delay=round1(clamp(Number(combo.delay),0,2));
       if(Number.isFinite(Number(combo.recovery))) s.combination.recovery=round1(clamp(Number(combo.recovery),0,8));
       if(typeof combo.avoidRepeat==='boolean') s.combination.avoidRepeat=combo.avoidRepeat;
       if(combo.strokes && typeof combo.strokes==='object'){
         for(const direction of DIRECTIONS){
           const savedStrokes=combo.strokes[direction.id];
-          if(Array.isArray(savedStrokes)) s.combination.strokes[direction.id]=
-            COMBO_ALLOWED[direction.id].filter(id=>savedStrokes.includes(id));
+          if(Array.isArray(savedStrokes)){
+            // New in v1.5: enabled side-drive corners also gain Smash on upgrade.
+            // Intentionally disabled directions (empty array) remain disabled.
+            // Once v1.5 settings are saved, later changes are never overridden.
+            const upgradeSideSmash = current===null && ['right','left'].includes(direction.id)
+              && savedStrokes.includes(direction.id==='right'?'fhDrive':'bhDrive');
+            s.combination.strokes[direction.id]=COMBO_ALLOWED[direction.id].filter(id=>
+              savedStrokes.includes(id)||(upgradeSideSmash&&id==='smash'));
+          }
         }
       }
     }
@@ -327,7 +340,11 @@ function updateControls(){
 function intervalInfo(mode){
   const i=settings.intervals[mode];
   if(mode==='footwork')return `신호 후 복귀 <b>${settings.recovery.toFixed(1)}초</b> + 랜덤 <b>${i.min.toFixed(1)}~${i.max.toFixed(1)}초</b> = 다음 신호까지 약 <b>${(settings.recovery+i.min).toFixed(1)}~${(settings.recovery+i.max).toFixed(1)}초</b>`;
-  if(mode==='combination')return `방향 음성 → <b>${settings.combination.delay.toFixed(1)}초</b> → 스트로크 음성 → 복귀 <b>${settings.combination.recovery.toFixed(1)}초</b> + 랜덤 <b>${i.min.toFixed(1)}~${i.max.toFixed(1)}초</b>. 음성 재생 시간은 별도로 걸립니다.`;
+  if(mode==='combination'){
+    const lead=settings.combination.speechMode==='combined'?'방향 + 스트로크를 <b>한 번에 음성 안내</b>':
+      `방향 음성 종료 → <b>${settings.combination.delay.toFixed(1)}초</b> → 스트로크 음성`;
+    return `${lead} → 복귀 <b>${settings.combination.recovery.toFixed(1)}초</b> + 랜덤 <b>${i.min.toFixed(1)}~${i.max.toFixed(1)}초</b>. 음성 재생 시간은 별도입니다.`;
+  }
   return `신호는 <b>${i.min.toFixed(1)}~${i.max.toFixed(1)}초</b> 사이에서 무작위로 발생합니다.`;
 }
 function comboCornerMarkup(direction){
@@ -370,10 +387,20 @@ function renderSettings(){
     </div>`;
   }
   if(mode==='combination'){
-    html+=`<div class="setting-block"><div class="setting-head"><div><div class="setting-label">방향 → 스트로크 간격</div><p class="setting-description">방향 음성이 끝난 후 스트로크 음성을 시작할 때까지의 시간.</p></div><div class="setting-value" id="comboDelayValue">${settings.combination.delay.toFixed(1)}초</div></div>
-      <div class="slider-row"><label for="comboDelayRange">지연</label><input id="comboDelayRange" type="range" min="0" max="2" step="0.1" value="${settings.combination.delay}" ${disabled}><output id="comboDelayOutput">${settings.combination.delay.toFixed(1)}초</output></div>
-      <div class="fine-adjust"><span>0.1초 미세 조절</span><button type="button" data-step-target="comboDelayRange" data-step-delta="-0.1" ${disabled}>− 0.1</button><button type="button" data-step-target="comboDelayRange" data-step-delta="0.1" ${disabled}>+ 0.1</button></div>
-    </div>
+    html+=`<div class="setting-block"><div class="setting-head"><div><div class="setting-label">음성 지시 방식 · Cue Style</div><p class="setting-description">두 음성을 나누거나, 방향과 스트로크를 한 문장으로 알려줍니다.</p></div></div>
+      <div class="combo-voice-picker" role="group" aria-label="D 모드 음성 지시 방식">
+        <button type="button" class="combo-voice-button ${settings.combination.speechMode==='staged'?'is-selected':''}" data-combo-voice="staged" aria-pressed="${settings.combination.speechMode==='staged'}" ${disabled}><strong>① 2단계 지시</strong><small>Right → ${settings.combination.delay.toFixed(1)}초 → Smash</small></button>
+        <button type="button" class="combo-voice-button ${settings.combination.speechMode==='combined'?'is-selected':''}" data-combo-voice="combined" aria-pressed="${settings.combination.speechMode==='combined'}" ${disabled}><strong>② 한 번에 지시</strong><small>Right, Smash</small></button>
+      </div>
+      <p class="setting-description">※ 한 번에 지시는 <b>한 개의 TTS 문장</b>으로 읽습니다. 음성 두 개를 겹쳐 재생하지 않습니다.</p>
+    </div>`;
+    if(settings.combination.speechMode==='staged'){
+      html+=`<div class="setting-block"><div class="setting-head"><div><div class="setting-label">방향 → 스트로크 간격</div><p class="setting-description">방향 음성이 끝난 후 스트로크 음성이 시작되기까지의 시간입니다. 0.0초도 두 개의 음성을 순서대로 재생합니다.</p></div><div class="setting-value" id="comboDelayValue">${settings.combination.delay.toFixed(1)}초</div></div>
+        <div class="slider-row"><label for="comboDelayRange">지연</label><input id="comboDelayRange" type="range" min="0" max="2" step="0.1" value="${settings.combination.delay}" ${disabled}><output id="comboDelayOutput">${settings.combination.delay.toFixed(1)}초</output></div>
+        <div class="fine-adjust"><span>0.1초 미세 조절</span><button type="button" data-step-target="comboDelayRange" data-step-delta="-0.1" ${disabled}>− 0.1</button><button type="button" data-step-target="comboDelayRange" data-step-delta="0.1" ${disabled}>+ 0.1</button></div>
+      </div>`;
+    }
+    html+=`
     <div class="setting-block"><div class="setting-head"><div><div class="setting-label">스트로크 후 중앙 복귀 시간</div><p class="setting-description">스트로크 음성이 끝난 뒤 복귀 시간을 확보합니다. 이후 랜덤 대기가 추가됩니다.</p></div><div class="setting-value" id="comboRecoveryValue">${settings.combination.recovery.toFixed(1)}초</div></div>
       <div class="slider-row"><label for="comboRecoveryRange">복귀</label><input id="comboRecoveryRange" type="range" min="0" max="8" step="0.1" value="${settings.combination.recovery}" ${disabled}><output id="comboRecoveryOutput">${settings.combination.recovery.toFixed(1)}초</output></div>
       <div class="fine-adjust"><span>0.1초 미세 조절</span><button type="button" data-step-target="comboRecoveryRange" data-step-delta="-0.1" ${disabled}>− 0.1</button><button type="button" data-step-target="comboRecoveryRange" data-step-delta="0.1" ${disabled}>+ 0.1</button></div>
@@ -391,11 +418,11 @@ function renderSettings(){
   }
   if(mode==='combination'){
     html+=`<div class="setting-block combo-setting"><div class="setting-head"><div><div class="setting-label">코너별 스트로크 직접 선택 <span class="combo-total">(<span id="comboPairCount">${selectedCombinations().length}</span>개 조합)</span></div><p class="setting-description">방향을 펼쳐 체크한 스트로크만 출제합니다. 모두 해제한 방향은 훈련에서 제외됩니다.</p></div></div>
-      <div class="combo-map-key">오른손잡이 기준 기본값 · 좌우 사이드는 드라이브 전용</div>
+      <div class="combo-map-key">오른손잡이 기준 기본값 · 좌우 사이드: 드라이브 + 스매시</div>
       <div class="combo-corners">${DIRECTIONS.map(comboCornerMarkup).join('')}</div>
       <p id="comboEmptyWarning" class="warn-note" ${selectedCombinations().length?'hidden':''}>선택된 스트로크가 없습니다. 하나 이상 체크해야 훈련을 시작할 수 있습니다.</p>
       <div class="combo-actions"><label class="combo-repeat"><input id="comboAvoidRepeat" type="checkbox" ${settings.combination.avoidRepeat?'checked':''} ${disabled}><span>직전 동일 방향·스트로크 조합 반복 방지</span></label><button id="restoreComboDefaults" class="text-button" type="button" ${disabled}>추천 조합 복원</button></div>
-      <div class="warn-note">앞쪽: 언더·푸쉬·헤어핀 / 양 사이드: 드라이브만 / 오른쪽 뒤·뒤: 클리어·스매시·드롭 / 왼쪽 뒤: 위 3종 + 백핸드 클리어. C.Grip의 1~10 번호는 변경되지 않습니다.</div>
+      <div class="warn-note">앞쪽: 언더·푸쉬·헤어핀 / 양 사이드: 드라이브·스매시 / 오른쪽 뒤·뒤: 클리어·스매시·드롭 / 왼쪽 뒤: 위 3종 + 백핸드 클리어. C.Grip의 1~10 번호는 변경되지 않습니다.</div>
     </div>`;
   }
   if(mode==='reaction'){
@@ -494,8 +521,13 @@ function beginComboDirection(now){
   state.lastCue=combo.direction.label+' / '+combo.stroke.label;
   state.count++;
   $('cueCount').innerHTML=String(state.count)+'<span class="metric-unit">회</span>';
-  setCueDisplay(combo.direction.label,'① 방향 이동 · 다음은 스트로크 음성',combo.direction.glyph,{animate:true});
-  runComboDirectionSpeech();
+  if(settings.combination.speechMode==='combined'){
+    setCueDisplay(combo.direction.label+' · '+combo.stroke.label,'한 번에 지시 · 이동 + 스트로크',combo.direction.glyph,{animate:true});
+    runComboCombinedSpeech();
+  }else{
+    setCueDisplay(combo.direction.label,'① 방향 이동 · 다음은 스트로크 음성',combo.direction.glyph,{animate:true});
+    runComboDirectionSpeech();
+  }
 }
 function runComboDirectionSpeech(){
   if(state.mode!=='combination'||!state.currentCombo)return;
@@ -508,6 +540,23 @@ function runComboDirectionSpeech(){
     state.nextAt=performance.now()+settings.combination.delay*1000;
     $('nextCue').textContent='스트로크 대기';
   });
+}
+/** Combined cue: exactly one TTS call and a shared finish/recovery path. */
+function runComboCombinedSpeech(){
+  if(state.mode!=='combination'||!state.currentCombo)return;
+  state.comboPhase='combined';state.nextAt=Infinity;
+  $('nextCue').textContent='동시 지시 음성';
+  const token=++state.sequenceToken;
+  speak(combinedComboSpeech(state.currentCombo),()=>{
+    if(token!==state.sequenceToken||state.phase!=='running')return;
+    scheduleComboRecovery();
+  });
+}
+function scheduleComboRecovery(){
+  if(performance.now()>=state.endsAt){finish();return;}
+  state.comboPhase='waiting';
+  state.nextAt=performance.now()+(settings.combination.recovery+randomSeconds('combination'))*1000;
+  $('nextCue').textContent='복귀 + 대기';
 }
 function deliverComboStroke(){
   if(state.mode!=='combination'||!state.currentCombo||state.phase!=='running')return;
@@ -522,10 +571,7 @@ function runComboStrokeSpeech(){
   const token=++state.sequenceToken;
   speak(strokeSpeech(state.currentCombo.stroke),()=>{
     if(token!==state.sequenceToken||state.phase!=='running')return;
-    if(performance.now()>=state.endsAt){finish();return;}
-    state.comboPhase='waiting';
-    state.nextAt=performance.now()+(settings.combination.recovery+randomSeconds('combination'))*1000;
-    $('nextCue').textContent='복귀 + 대기';
+    scheduleComboRecovery();
   });
 }
 function deliverCue(now){
@@ -579,7 +625,10 @@ function resume(){
     setCueDisplay('다시 집중!','다음 랜덤 신호를 기다리세요',MODE_INFO[state.mode].icon);
     $('nextCue').textContent='랜덤';
     if(state.mode==='combination'){
-      if(state.comboPhase==='direction'){
+      if(state.comboPhase==='combined'){
+        setCueDisplay(state.currentCombo.direction.label+' · '+state.currentCombo.stroke.label,'한 번에 지시 음성 다시 재생',state.currentCombo.direction.glyph);
+        runComboCombinedSpeech();
+      }else if(state.comboPhase==='direction'){
         setCueDisplay(state.currentCombo.direction.label,'① 방향 음성 다시 재생',state.currentCombo.direction.glyph);
         runComboDirectionSpeech();
       }else if(state.comboPhase==='stroke'){
@@ -634,6 +683,12 @@ $('settingsPanel').addEventListener('click',event=>{
     if(!VOICE_LANGUAGES.some(v=>v.id===language))return;
     cancelSpeak();settings.voiceLanguage=language;saveSettings();renderSettings();return;
   }
+  const comboVoice=event.target.closest('button[data-combo-voice]');
+  if(comboVoice&&!isActive()&&settings.mode==='combination'){
+    const mode=comboVoice.dataset.comboVoice;
+    if(!['staged','combined'].includes(mode))return;
+    cancelSpeak();settings.combination.speechMode=mode;saveSettings();renderSettings();return;
+  }
   const duration=event.target.closest('[data-duration]');
   if(duration&&!isActive()){
     settings.duration=Number(duration.dataset.duration);saveSettings();
@@ -657,12 +712,17 @@ $('settingsPanel').addEventListener('click',event=>{
       const pairs=selectedCombinations();
       if(!pairs.length){showToast('D 모드의 스트로크를 하나 이상 체크하세요.');return;}
       const combo=pairs[0];
-      speak(directionSpeech(combo.direction),()=>{
-        if(settings.mode!=='combination'||isActive())return;
-        setTimeout(()=>{
-          if(settings.mode==='combination'&&!isActive())speak(strokeSpeech(combo.stroke));
-        },settings.combination.delay*1000);
-      });
+      if(settings.combination.speechMode==='combined'){
+        speak(combinedComboSpeech(combo));
+      }else{
+        speak(directionSpeech(combo.direction),()=>{
+          if(settings.mode!=='combination'||isActive())return;
+          setTimeout(()=>{
+            if(settings.mode==='combination'&&settings.combination.speechMode==='staged'&&!isActive())
+              speak(strokeSpeech(combo.stroke));
+          },settings.combination.delay*1000);
+        });
+      }
     }
   }
 });
