@@ -1,9 +1,9 @@
 {
   "id": "./index.html",
-  "name": "Shuttle Cue - 배드민턴 훈련",
+  "name": "Shuttle Cue - Badminton Trainer",
   "short_name": "Shuttle Cue",
-  "description": "비프음, 8방향 풋워크, 그립 전환, 2단계/한 번에 음성 조합 훈련",
-  "lang": "ko-KR",
+  "description": "Solo badminton: reaction cues, footwork, grips and shot combinations in Korean, Japanese or English",
+  "lang": "en",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

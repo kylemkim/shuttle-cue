@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./styles.css">
   <title>Shuttle Cue — 배드민턴 혼자 훈련</title>
+  <script src="./i18n.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -23,24 +24,35 @@
           <svg viewBox="0 0 48 48" width="34" height="34" fill="none"><path d="m15 9 9 19 9-19M10 15l14 13 14-13M8 23l16 5 16-5" stroke="#4b90bf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="m18 30 6 10 6-10z" fill="#8cc9ef"/></svg>
         </div>
         <div>
-          <div class="brand-eyebrow">YOUR SOLO COURT PARTNER</div>
+          <div class="brand-eyebrow" data-ui-text="tagline">YOUR SOLO COURT PARTNER</div>
           <h1>Shuttle <em>Cue</em><span class="brand-ball">✳</span></h1>
         </div>
       </div>
-      <div class="app-status"><span class="status-dot" aria-hidden="true"></span>OFFLINE READY</div>
+      <div class="header-right">
+        <label class="ui-language" for="uiLanguageSelect">
+          <span class="language-icon" aria-hidden="true">🌐</span>
+          <span class="sr-only" data-ui-text="language">화면 언어</span>
+          <select id="uiLanguageSelect" aria-label="화면 언어" data-ui-aria="language">
+            <option value="ko">한국어</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <div class="app-status"><span class="status-dot" aria-hidden="true"></span>OFFLINE READY</div>
+      </div>
     </header>
 
-    <section class="mode-section" aria-label="훈련 유형 선택">
-      <div class="section-heading"><span class="kicker">01 / MODE</span><span class="hint">훈련 유형을 선택하세요</span></div>
-      <nav class="mode-tabs" id="modeTabs" aria-label="훈련 모드">
-        <button class="mode-tab" type="button" data-mode="reaction" aria-pressed="true"><span class="tab-symbol">✦</span><strong>A. Reaction</strong><small>스플릿 스텝</small></button>
-        <button class="mode-tab" type="button" data-mode="footwork" aria-pressed="false"><span class="tab-symbol">↗</span><strong>B. Footwork</strong><small>8방향 이동</small></button>
-        <button class="mode-tab" type="button" data-mode="grip" aria-pressed="false"><span class="tab-symbol">⌁</span><strong>C. Grip</strong><small>그립 전환</small></button>
-        <button class="mode-tab" type="button" data-mode="combination" aria-pressed="false"><span class="tab-symbol">✧</span><strong>D. Combo</strong><small>이동 + 스트로크</small></button>
+    <section class="mode-section" aria-label="훈련 유형 선택" data-ui-aria="modeSection">
+      <div class="section-heading"><span class="kicker">01 / MODE</span><span class="hint" data-ui-text="modeHint">훈련 유형을 선택하세요</span></div>
+      <nav class="mode-tabs" id="modeTabs" aria-label="훈련 모드" data-ui-aria="modeAria">
+        <button class="mode-tab" type="button" data-mode="reaction" aria-pressed="true"><span class="tab-symbol">✦</span><strong>A. Reaction</strong><small data-ui-text="modeReaction">스플릿 스텝</small></button>
+        <button class="mode-tab" type="button" data-mode="footwork" aria-pressed="false"><span class="tab-symbol">↗</span><strong>B. Footwork</strong><small data-ui-text="modeFootwork">8방향 이동</small></button>
+        <button class="mode-tab" type="button" data-mode="grip" aria-pressed="false"><span class="tab-symbol">⌁</span><strong>C. Grip</strong><small data-ui-text="modeGrip">그립 전환</small></button>
+        <button class="mode-tab" type="button" data-mode="combination" aria-pressed="false"><span class="tab-symbol">✧</span><strong>D. Combo</strong><small data-ui-text="modeCombo">이동 + 스트로크</small></button>
       </nav>
     </section>
 
-    <section class="training-card" aria-label="훈련 실행">
+    <section class="training-card" aria-label="훈련 실행" data-ui-aria="trainingSection">
       <div class="training-top"><div class="training-tag" id="trainingTag">REACTION / A</div><span class="live-state" id="liveState"><span class="live-dot"></span> READY</span></div>
       <div class="cue-stage mode-reaction" id="cueStage">
         <div class="cue-orbit orbit-one" aria-hidden="true"></div>
@@ -48,26 +60,26 @@
         <div class="cue-core" id="cueCore"><div class="cue-glyph" id="cueGlyph" aria-hidden="true">✦</div><div class="cue-title" id="cueTitle" aria-live="off">준비 완료</div><div class="cue-subtitle" id="cueSubtitle">시작 버튼을 누르면 3초 뒤 훈련합니다</div></div>
       </div>
       <div class="metrics-row">
-        <div class="metric"><div class="metric-name">남은 시간</div><div class="metric-value" id="remainingTime" aria-live="off">01:00</div></div>
+        <div class="metric"><div class="metric-name" data-ui-text="timeLeft">남은 시간</div><div class="metric-value" id="remainingTime" aria-live="off">01:00</div></div>
         <div class="metric-split" aria-hidden="true"></div>
-        <div class="metric"><div class="metric-name">신호 횟수</div><div class="metric-value" id="cueCount">0<span class="metric-unit">회</span></div></div>
+        <div class="metric"><div class="metric-name" data-ui-text="cueCount">신호 횟수</div><div class="metric-value" id="cueCount">0<span class="metric-unit">회</span></div></div>
         <div class="metric-split" aria-hidden="true"></div>
-        <div class="metric"><div class="metric-name">다음 신호</div><div class="metric-value metric-next" id="nextCue">—</div></div>
+        <div class="metric"><div class="metric-name" data-ui-text="nextCue">다음 신호</div><div class="metric-value metric-next" id="nextCue">—</div></div>
       </div>
       <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
       <div class="action-row">
         <button class="primary-action" id="mainAction" type="button"><span id="mainActionIcon">▶</span><span id="mainActionText">훈련 시작</span></button>
         <button class="secondary-action" id="stopAction" type="button" hidden>■ 종료</button>
       </div>
-      <div class="training-notice" id="trainingNotice">훈련 중에는 화면을 켜 두세요. 다른 앱으로 전환하면 자동으로 일시정지합니다.</div>
+      <div class="training-notice" id="trainingNotice" data-ui-text="notice">훈련 중에는 화면을 켜 두세요. 다른 앱으로 전환하면 자동으로 일시정지합니다.</div>
     </section>
 
-    <section class="settings-card" aria-label="훈련 설정">
-      <div class="settings-heading"><div><div class="kicker">02 / SETUP</div><h2>나만의 훈련 설정 <span class="settings-flower">✻</span></h2></div><button id="resetSettings" class="text-button" type="button">기본값</button></div>
+    <section class="settings-card" aria-label="훈련 설정" data-ui-aria="settingsSection">
+      <div class="settings-heading"><div><div class="kicker">02 / SETUP</div><h2><span data-ui-text="settingsTitle">나만의 훈련 설정</span> <span class="settings-flower">✻</span></h2></div><button id="resetSettings" class="text-button" type="button" data-ui-text="reset">기본값</button></div>
       <div id="settingsPanel"></div>
     </section>
 
-    <footer class="site-footer"><span>MADE FOR YOUR NEXT RALLY 🏸</span><span>v1.5 · PWA</span></footer>
+    <footer class="site-footer"><span data-ui-text="footer">MADE FOR YOUR NEXT RALLY 🏸</span><span>v1.6 · PWA</span></footer>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
 </body>

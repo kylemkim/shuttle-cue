@@ -74,3 +74,26 @@ body{background:linear-gradient(155deg,#f3faff 0%,#f8fcff 52%,#eef8ff 100%)}
 .combo-voice-button.is-selected small{color:#578eb9}
 .combo-voice-button:active:not(:disabled){transform:scale(.985)}
 @media(max-width:350px){.combo-voice-picker{gap:6px}.combo-voice-button{padding:9px 5px}.combo-voice-button strong{font-size:11px}.combo-voice-button small{font-size:9px}}
+
+/* V1.6 — UI locale dropdown; preserve the original sky-blue look. */
+.app-header{flex-wrap:wrap;row-gap:9px}
+.header-right{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.ui-language{display:inline-flex;align-items:center;gap:4px;border:1px solid #bedff4;border-radius:11px;background:#e9f6ff;padding:3px 5px 3px 8px;box-shadow:0 3px 12px #6eafd414}
+.language-icon{font-size:14px;line-height:1}
+.ui-language select{min-width:0;width:100px;padding:6px 18px 6px 5px;border:0;background:transparent;color:#2d78a6;font-weight:800;font-size:12px;cursor:pointer;border-radius:7px;outline-offset:2px;appearance:auto}
+.ui-language select:disabled{opacity:.56;cursor:not-allowed}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:440px){
+ .app-header{align-items:center}
+ .brand{flex:1 1 auto;min-width:180px}
+ .header-right{flex:0 1 auto}
+ .ui-language select{width:92px;font-size:11px}
+ .app-status{font-size:8px}
+}
+@media(max-width:375px){.header-right{width:100%;justify-content:space-between}.app-status{font-size:9px}.ui-language select{width:104px}}
+/* Japanese glyphs and longer English translations can wrap without clipping. */
+.mode-tab small{overflow-wrap:anywhere;line-height:1.3}
+.setting-head>.setting-label{min-width:0}
+.setting-value{max-width:43%;white-space:normal;text-align:right;line-height:1.4}
+.combo-corner-title{overflow-wrap:anywhere}
+.choice-pill span:last-child{overflow-wrap:anywhere}
